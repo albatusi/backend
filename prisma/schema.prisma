@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model usuarios {
+  idUsuario             Int      @id @default(autoincrement())
+  nomUsuario            String   @db.VarChar(255)
+  docUsuario            String   @unique @db.VarChar(255)
+  emaUsuario            String   @unique @db.VarChar(255)
+  rol_idUsuario         Int      @default(2)
+  fecha_creacionUsuario DateTime @default(now())
+  pasUsuario            String   @db.VarChar(255)
+  photoUrl              String?  @db.VarChar(255)
+  habilitado2FA         Boolean  @default(false)
+  secret2FA             String?  @db.VarChar(255)
+  rol                   roles    @relation(fields: [rol_idUsuario], references: [idRol])
+
+  @@index([rol_idUsuario], map: "usuarios_rol_idUsuario_fkey")
+}
+
+model roles {
+  idRol    Int        @id @default(autoincrement())
+  nomRol   String     @db.VarChar(255)
+  usuarios usuarios[]
+
+   @@map("roles")
+}
