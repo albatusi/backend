@@ -1,8 +1,9 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+// Asegúrate de que estos archivos existan
 import authRoutes from "./src/routes/auth.routes.js";
-// ✅ CORREGIDO: Importamos la instancia única de Prisma
+import vehicleRoutes from "./src/routes/vehicle.routes.js";
 import prisma from "./src/lib/prisma.client.js";
 
 dotenv.config();
@@ -10,13 +11,18 @@ const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(express.json({ limit: "10mb" })); // Para fotos en base64
+// Límite aumentado a '50mb' para manejar Data URLs de fotos grandes.
+app.use(express.json({ limit: "50mb" }));
 
-// Rutas
+// --- Rutas ---
+// Monta las rutas de autenticación bajo /api/auth
 app.use("/api/auth", authRoutes);
 
-// Endpoint de prueba
-app.get("/api/auth/ping", (req, res) => {
+// Monta las rutas de vehículos bajo /api/vehicles
+app.use("/api/vehicles", vehicleRoutes);
+
+// Endpoint de prueba (cambiado a /api/ping para ser general)
+app.get("/api/ping", (req, res) => {
   res.json({ message: "Backend conectado 🚀" });
 });
 
