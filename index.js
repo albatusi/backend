@@ -15,28 +15,37 @@ app.use((req, res, next) => {
   next();
 });
 
-// mount auth routes safely
-try {
-  const authRoutes = (await import("./src/routes/auth.routes.js")).default;
-  app.use("/api/auth", authRoutes);
-  console.log("Mounted /api/auth");
-} catch (err) {
-  console.error("Error mounting /api/auth:", err && err.stack ? err.stack : err);
-}
-
-// mount vehicle routes safely and record whether it succeeded
 let vehicleMounted = false;
-try {
-  const vehicleRoutesModule = await import("./src/routes/vehicle.routes.js");
-  const vehicleRoutes = vehicleRoutesModule.default || vehicleRoutesModule;
-  app.use("/api/vehicles", vehicleRoutes);
-  vehicleMounted = true;
-  console.log("Mounted /api/vehicles");
-} catch (err) {
-  console.error("Error mounting /api/vehicles:", err && err.stack ? err.stack : err);
+
+async function mountRouters() {
+  // auth
+  try {
+    const mod = await import("./src/routes/auth.routes.js");
+    const authRoutes = mod.default || mod;
+    app.use("/api/auth", authRoutes);
+    console.log("✅ Mounted /api/auth");
+  } catch (err) {
+    console.error("❌ Error mounting /api/auth:", err && err.stack ? err.stack : err);
+  }
+
+  // vehicles
+  try {
+    const mod = await import("./src/routes/vehicle.routes.js");
+    const vehicleRoutes = mod.default || mod;
+    app.use("/api/vehicles", vehicleRoutes);
+    vehicleMounted = true;
+    console.log("✅ Mounted /api/vehicles");
+  } catch (err) {
+    console.error("❌ Error mounting /api/vehicles:", err && err.stack ? err.stack : err);
+  }
 }
 
-// simple ping
+// monta routers asincrónicamente pero antes de escuchar peticiones
+mountRouters().catch((e) => {
+  console.error("Error in mountRouters:", e && e.stack ? e.stack : e);
+});
+
+// ping simple
 app.get("/api/ping", (req, res) => res.json({ message: "Backend conectado 🚀" }));
 
 // diagnostic ping for vehicles mount
@@ -45,26 +54,20 @@ app.get("/api/vehicles/__ping", (req, res) => {
   return res.status(500).json({ ok: false, msg: "api vehicles NOT mounted", mounted: false });
 });
 
-// list registered routes (improved to show mount path)
+// lista rutas registradas (útil para debug)
 function listRegisteredRoutes() {
   const results = [];
   if (!app._router) return results;
   app._router.stack.forEach((layer) => {
-    // direct route on app
     if (layer.route) {
       const methods = Object.keys(layer.route.methods).join(",").toUpperCase();
       results.push({ mount: "/", path: layer.route.path, methods });
     } else if (layer.name === "router" && layer.handle && layer.regexp) {
-      // try to extract mount path from regexp (best-effort)
       let mountPath = "/";
       try {
-        // layer.regexp looks like /^\/api\/vehicles(?:\/(?=$))?$/i  -> try to reconstruct
         const m = String(layer.regexp).match(/\\\/[a-z0-9-_\\\/]*/i);
-        if (m && m[0]) {
-          mountPath = m[0].replace(/\\\//g, "/");
-        }
+        if (m && m[0]) mountPath = m[0].replace(/\\\//g, "/");
       } catch (e) {}
-      // iterate nested handlers
       layer.handle.stack.forEach((handler) => {
         if (handler.route) {
           const methods = Object.keys(handler.route.methods).join(",").toUpperCase();
@@ -75,7 +78,6 @@ function listRegisteredRoutes() {
   });
   return results;
 }
-
 app.get("/_routes", (req, res) => {
   try {
     return res.json({ ok: true, routes: listRegisteredRoutes() });
@@ -84,7 +86,7 @@ app.get("/_routes", (req, res) => {
   }
 });
 
-// start
+// start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   try {
