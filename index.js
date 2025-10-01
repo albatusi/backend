@@ -40,21 +40,19 @@ async function mountRouters() {
   }
 }
 
-// monta routers asincrónicamente pero antes de escuchar peticiones
 mountRouters().catch((e) => {
   console.error("Error in mountRouters:", e && e.stack ? e.stack : e);
 });
 
-// ping simple
+// pings
 app.get("/api/ping", (req, res) => res.json({ message: "Backend conectado 🚀" }));
 
-// diagnostic ping for vehicles mount
 app.get("/api/vehicles/__ping", (req, res) => {
   if (vehicleMounted) return res.json({ ok: true, msg: "api vehicles ping OK", mounted: true });
   return res.status(500).json({ ok: false, msg: "api vehicles NOT mounted", mounted: false });
 });
 
-// lista rutas registradas (útil para debug)
+// list routes
 function listRegisteredRoutes() {
   const results = [];
   if (!app._router) return results;
@@ -86,7 +84,6 @@ app.get("/_routes", (req, res) => {
   }
 });
 
-// start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   try {
