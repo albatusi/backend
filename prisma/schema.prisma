@@ -1,66 +1,43 @@
-  // schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
 
-  generator client {
-    provider = "prisma-client-js"
-  }
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
 
-  // 🎯 CAMBIO: Asegúrate de que estás usando 'mysql' como proveedor.
-  datasource db {
-    provider = "mysql"
-    url      = env("DATABASE_URL")
-  }
+model Vehicle {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  plate     String   @unique @db.VarChar(255)
+  type      String?  @db.VarChar(50)
+  facePhoto String?  @db.MediumText
+  createdAt DateTime @default(now())
 
-  // ===================================
-  // 🚗 NUEVO MODELO PARA VEHICLES
-  // ===================================
-  model Vehicle {
-    // id: Usado en el frontend como 'id'
-    id          Int      @id @default(autoincrement())
-    
-    // name: Nombre del propietario
-    name        String   @db.VarChar(255)
-    
-    // plate: Placa del vehículo, debe ser única
-    plate       String   @unique @db.VarChar(255)
-    
-    // type: Tipo de vehículo (carro, moto, bicicleta)
-    // ✅ CORRECCIÓN: Se agrega '?' para hacerlo opcional/NULLABLE.
-    type        String?  @db.VarChar(50) 
-    
-    // facePhoto: Almacena la Data URL de la imagen. 
-    // Usamos @db.Text para cadenas largas en MySQL.
-    facePhoto   String?  @db.MediumText
-    // createdAt: Fecha de registro
-    createdAt   DateTime @default(now())
+  @@map("vehicles")
+}
 
-    // Mapear el nombre de la tabla en la base de datos (opcional, pero útil)
-    @@map("vehicles")
-  }
+model usuarios {
+  idUsuario             Int      @id @default(autoincrement())
+  nomUsuario            String   @db.VarChar(255)
+  docUsuario            String   @unique @db.VarChar(255)
+  emaUsuario            String   @unique @db.VarChar(255)
+  rol_idUsuario         Int      @default(2)
+  fecha_creacionUsuario DateTime @default(now())
+  pasUsuario            String   @db.VarChar(255)
+  photoUrl              String?  @db.VarChar(255)
+  habilitado2FA         Boolean  @default(false)
+  secret2FA             String?  @db.VarChar(255)
+  rol                   roles    @relation(fields: [rol_idUsuario], references: [idRol])
 
-  // ===================================
-  // MODELOS EXISTENTES (USUARIOS y ROLES)
-  // ... (El resto de modelos no se modifican)
-  // ===================================
-  model usuarios {
-    idUsuario             Int      @id @default(autoincrement())
-    nomUsuario            String   @db.VarChar(255)
-    docUsuario            String   @unique @db.VarChar(255)
-    emaUsuario            String   @unique @db.VarChar(255)
-    rol_idUsuario         Int      @default(2)
-    fecha_creacionUsuario DateTime @default(now())
-    pasUsuario            String   @db.VarChar(255)
-    photoUrl              String?  @db.VarChar(255)
-    habilitado2FA         Boolean  @default(false)
-    secret2FA             String?  @db.VarChar(255)
-    rol                   roles    @relation(fields: [rol_idUsuario], references: [idRol])
+  @@index([rol_idUsuario], map: "usuarios_rol_idUsuario_fkey")
+}
 
-    @@index([rol_idUsuario], map: "usuarios_rol_idUsuario_fkey")
-  }
+model roles {
+  idRol    Int        @id @default(autoincrement())
+  nomRol   String     @db.VarChar(255)
+  usuarios usuarios[]
 
-  model roles {
-    idRol    Int      @id @default(autoincrement())
-    nomRol   String   @db.VarChar(255)
-    usuarios usuarios[]
-
-    @@map("roles")
-  }
+  @@map("roles")
+}
